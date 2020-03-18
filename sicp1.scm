@@ -1,9 +1,11 @@
-(define (square c) (* c c))
+(define (square c) 
+  (* c c))
 
 (define (good-enough? guess x)
   (< (abs (- (square guess) x)) 0.001))
 
-(define (average x y) (/ (x + y) 2))
+(define (average x y) 
+  (/ (+ x y) 2))
 
 (define (improve guess x) 
   (average guess (/ x guess)))
