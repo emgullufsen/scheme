@@ -42,3 +42,10 @@
 (define operation-table (make-table))
 (define get (operation-table 'lookup-proc))
 (define put (operation-table 'insert-proc!))
+
+(define (deriv exp var)
+    (cond ((number? exp) 0)
+          ((variable? exp) 
+            (if (same-variable? exp var v )))
+    )
+)
