@@ -12,7 +12,7 @@
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
 (define (equ? x y) (apply-generic 'equal x y))
-(define (=zero?))
+(define (=zero? x) (apply-generic 'eqzero x))
 
 ; regular (scheme) numbers
 (define (install-scheme-number-package)
@@ -30,6 +30,7 @@
        (lambda (x y) (= x y)))
   (put 'make 'scheme-number
        (lambda (x) (tag x)))
+  (put 'eqzero '(scheme-number) (lambda (x) (= 0 x)))
   'done)
 
 (install-scheme-number-package)
@@ -59,6 +60,7 @@
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
   (define (equal-rat x y) (and (= (numer x) (numer y)) (= (denom x) (denom y))))
+  (define (=zero?-rat x) (= 0 (numer x)))
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -73,6 +75,7 @@
        (lambda (x y) (equal-rat x y)))
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
+  (put 'eqzero '(rational) (lambda (x) (=zero?-rat x)))
   'done)
 
 (install-rational-package)
@@ -131,6 +134,7 @@
   (put 'magnitude '(complex) magnitude)
   (put 'angle '(complex) angle)
   (put 'equal '(complex complex) (lambda (z1 z2) (equal-complex z1 z2)))
+  (put 'eqzero '(complex) (lambda (z) (equal-complex z (make-from-mag-ang 0 0))))
   'done)
 
 (install-complex-package)
