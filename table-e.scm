@@ -1,8 +1,7 @@
 #lang racket
 (require rnrs/base-6)
 (require rnrs/mutable-pairs-6)
-(provide get)
-(provide put)
+(provide get put get-coercion put-coercion)
 (define (assoc key records)
   (cond ((null? records) false)
         ((equal? key (caar records)) (car records))
@@ -46,5 +45,8 @@
     dispatch))
 
 (define operation-table (make-table))
+(define coercion-table (make-table))
 (define get (operation-table 'lookup-proc))
 (define put (operation-table 'insert-proc!))
+(define get-coercion (coercion-table 'lookup-proc))
+(define put-coercion (coercion-table 'insert-proc!))

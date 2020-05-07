@@ -13,6 +13,9 @@
 (define (div x y) (apply-generic 'div x y))
 (define (equ? x y) (apply-generic 'equal x y))
 (define (=zero? x) (apply-generic 'eqzero x))
+; for exercise 2.81 - only defined & installed for scheme-numbers 
+(define (exp x y) 
+  (apply-generic 'exp x y))
 
 ; regular (scheme) numbers
 (define (install-scheme-number-package)
@@ -31,6 +34,9 @@
   (put 'make 'scheme-number
        (lambda (x) (tag x)))
   (put 'eqzero '(scheme-number) (lambda (x) (= 0 x)))
+  (put 'exp '(scheme-number scheme-number)
+       (lambda (x y) 
+           (tag (expt x y)))) 
   'done)
 
 (install-scheme-number-package)
@@ -143,3 +149,9 @@
   ((get 'make-from-real-imag 'complex) x y))
 (define (make-complex-from-mag-ang r a)
   ((get 'make-from-mag-ang 'complex) r a))
+
+(define (scheme-number->complex n)
+  (make-complex-from-real-imag 
+   (contents n) 0))
+
+(put-coercion 'scheme-number 'complex scheme-number->complex)

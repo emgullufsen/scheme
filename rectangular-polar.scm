@@ -1,7 +1,7 @@
 #lang racket
 (require "table-e.scm")
 (provide real-part imag-part magnitude angle apply-generic square
-         attach-tag type-tag contents rectangular? polar?)
+         attach-tag type-tag contents rectangular? polar? same-type?)
 (define (square x) (* x x))
 (define (attach-tag type-tag contents)
     (if (eq? type-tag 'scheme-number) 
@@ -23,7 +23,7 @@
   (eq? (type-tag z) 'rectangular))
 (define (polar? z)
   (eq? (type-tag z) 'polar))
-
+(define (same-type? o1 o2) (eq? (type-tag o1) (type-tag o2)))
 (define (install-rectangular-package)
   ;; internal procedures
   (define (real-part z) (car z))
@@ -86,10 +86,34 @@
     (let ((proc (get op type-tags)))
       (if proc
           (apply proc (map contents args))
-          (error
-            "No method for these types: 
-             APPLY-GENERIC"
-            (list op type-tags))))))
+          (if (= (length args) 2)
+              (let ((type1 (car type-tags))
+                    (type2 (cadr type-tags))
+                    (a1 (car args))
+                    (a2 (cadr args)))
+                (if (eq? type1 type2) 
+                  (error "No method for these types ()" (list op type-tags))
+                  (let ((t1->t2 
+                       (get-coercion type1
+                                     type2))
+                      (t2->t1 
+                       (get-coercion type2 
+                                     type1)))
+                  (cond (t1->t2
+                         (apply-generic 
+                          op (t1->t2 a1) a2))
+                        (t2->t1
+                         (apply-generic 
+                          op a1 (t2->t1 a2)))
+                        (else
+                         (error 
+                          "No method for these types (*)"
+                          (list 
+                           op 
+                           type-tags)))))))
+              (error 
+               "No method for these types (**)"
+               (list op type-tags)))))))
 
 (define (real-part z) 
   (apply-generic 'real-part z))
