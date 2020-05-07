@@ -1,7 +1,7 @@
 #lang racket
 (require "table-e.rkt")
 (require "rectangular-polar.rkt")
-(provide exp)
+(provide type-tag exp apply-generic-general apply-generic make-rational make-scheme-number make-complex-from-real-imag coerce-em)
 
 (define (gcd a b)
     (if (= b 0) 

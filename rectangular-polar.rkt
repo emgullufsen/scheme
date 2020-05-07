@@ -1,8 +1,8 @@
 #lang racket
 (require "table-e.rkt")
 
-(provide real-part imag-part magnitude angle apply-generic square
-         attach-tag type-tag contents rectangular? polar? same-type?)
+(provide real-part imag-part magnitude angle apply-generic apply-generic-general square
+         attach-tag type-tag contents rectangular? polar? same-type? coerce-em)
          
 (define (square x) (* x x))
 
@@ -18,6 +18,33 @@
         ((number? datum) 'scheme-number)
         (else (error "Bad tagged datum: 
               TYPE-TAG" datum))))
+
+(define (loop-eq? e lst) 
+  (if (empty? lst) 
+    '#t
+    (if (eq? e (car lst)) (loop-eq? e (cdr lst)) '#f)))
+
+(define (coerce-em type-tags args)
+    (if (empty? type-tags) (error "No method for these types (coerce-em)")
+    (let ((the-type (car type-tags)))
+      (let ((args-convert 
+              (map 
+                (lambda (a) 
+                  (let ((coerce-proc (get-coercion (type-tag a) the-type)))
+                    (if (eq? the-type (type-tag a)) 
+                      a
+                      (if coerce-proc (coerce-proc a) a))))
+                args)))
+        (if (loop-eq? the-type (map type-tag args-convert))
+          args-convert
+          (coerce-em (cdr type-tags) args))))))
+
+(define (apply-generic-general op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (apply-generic-general op . (coerce-em type-tags args))))))
 
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
