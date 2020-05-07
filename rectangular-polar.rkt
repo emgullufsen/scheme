@@ -1,29 +1,72 @@
 #lang racket
-(require "table-e.scm")
+(require "table-e.rkt")
+
 (provide real-part imag-part magnitude angle apply-generic square
          attach-tag type-tag contents rectangular? polar? same-type?)
+         
 (define (square x) (* x x))
+
 (define (attach-tag type-tag contents)
     (if (eq? type-tag 'scheme-number) 
         contents
         (cons type-tag contents)
     )
 )
+
 (define (type-tag datum)
   (cond ((pair? datum) (car datum))
         ((number? datum) 'scheme-number)
         (else (error "Bad tagged datum: 
               TYPE-TAG" datum))))
+
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (if (= (length args) 2)
+              (let ((type1 (car type-tags))
+                    (type2 (cadr type-tags))
+                    (a1 (car args))
+                    (a2 (cadr args)))
+                (if (eq? type1 type2) 
+                  (error "No method for these types ()" (list op type-tags))
+                  (let ((t1->t2 
+                       (get-coercion type1
+                                     type2))
+                      (t2->t1 
+                       (get-coercion type2 
+                                     type1)))
+                  (cond (t1->t2
+                         (apply-generic 
+                          op (t1->t2 a1) a2))
+                        (t2->t1
+                         (apply-generic 
+                          op a1 (t2->t1 a2)))
+                        (else
+                         (error 
+                          "No method for these types (*)"
+                          (list 
+                           op 
+                           type-tags)))))))
+              (error 
+               "No method for these types (**)"
+               (list op type-tags)))))))
+
 (define (contents datum)
   (cond ((pair? datum) (cdr datum))
         ((number? datum) datum)
         (else (error "Bad tagged datum: 
               CONTENTS" datum))))
+
 (define (rectangular? z)
   (eq? (type-tag z) 'rectangular))
+
 (define (polar? z)
   (eq? (type-tag z) 'polar))
+
 (define (same-type? o1 o2) (eq? (type-tag o1) (type-tag o2)))
+
 (define (install-rectangular-package)
   ;; internal procedures
   (define (real-part z) (car z))
@@ -80,40 +123,6 @@
 
 (install-rectangular-package)
 (install-polar-package)
-
-(define (apply-generic op . args)
-  (let ((type-tags (map type-tag args)))
-    (let ((proc (get op type-tags)))
-      (if proc
-          (apply proc (map contents args))
-          (if (= (length args) 2)
-              (let ((type1 (car type-tags))
-                    (type2 (cadr type-tags))
-                    (a1 (car args))
-                    (a2 (cadr args)))
-                (if (eq? type1 type2) 
-                  (error "No method for these types ()" (list op type-tags))
-                  (let ((t1->t2 
-                       (get-coercion type1
-                                     type2))
-                      (t2->t1 
-                       (get-coercion type2 
-                                     type1)))
-                  (cond (t1->t2
-                         (apply-generic 
-                          op (t1->t2 a1) a2))
-                        (t2->t1
-                         (apply-generic 
-                          op a1 (t2->t1 a2)))
-                        (else
-                         (error 
-                          "No method for these types (*)"
-                          (list 
-                           op 
-                           type-tags)))))))
-              (error 
-               "No method for these types (**)"
-               (list op type-tags)))))))
 
 (define (real-part z) 
   (apply-generic 'real-part z))

@@ -1,10 +1,13 @@
 #lang racket
-(require "table-e.scm")
-(require "rectangular-polar.scm")
+(require "table-e.rkt")
+(require "rectangular-polar.rkt")
+(provide exp)
+
 (define (gcd a b)
     (if (= b 0) 
         a 
         (gcd b (remainder a b))))
+        
 ; the generic operations that act on regular numbers,
 ; rationals, and complex numbers
 (define (add x y) (apply-generic 'add x y))

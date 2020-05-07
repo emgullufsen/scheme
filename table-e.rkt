@@ -2,6 +2,7 @@
 (require rnrs/base-6)
 (require rnrs/mutable-pairs-6)
 (provide get put get-coercion put-coercion)
+
 (define (assoc key records)
   (cond ((null? records) false)
         ((equal? key (caar records)) (car records))
