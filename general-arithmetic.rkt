@@ -19,6 +19,7 @@
 ; for exercise 2.81 - only defined & installed for scheme-numbers 
 (define (exp x y) 
   (apply-generic 'exp x y))
+(define (raise x) (apply-generic 'raise x))
 
 ; regular (scheme) numbers
 (define (install-scheme-number-package)
@@ -39,7 +40,8 @@
   (put 'eqzero '(scheme-number) (lambda (x) (= 0 x)))
   (put 'exp '(scheme-number scheme-number)
        (lambda (x y) 
-           (tag (expt x y)))) 
+           (tag (expt x y))))
+  (put 'raise '(scheme-number) (lambda (x) (make-rational x 1)))
   'done)
 
 (install-scheme-number-package)
@@ -85,6 +87,7 @@
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
   (put 'eqzero '(rational) (lambda (x) (=zero?-rat x)))
+  (put 'raise '(rational) (lambda (x) (make-complex-from-real-imag ())))
   'done)
 
 (install-rational-package)

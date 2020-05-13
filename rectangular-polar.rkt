@@ -44,7 +44,7 @@
     (let ((proc (get op type-tags)))
       (if proc
           (apply proc (map contents args))
-          (apply-generic-general op . (coerce-em type-tags args))))))
+          (apply-generic-general op (coerce-em type-tags args))))))
 
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
