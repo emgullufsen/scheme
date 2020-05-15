@@ -1,13 +1,14 @@
 #lang racket
 (require "table-e.rkt")
 (require "rectangular-polar.rkt")
-(provide type-tag exp apply-generic-general apply-generic make-rational make-scheme-number make-complex-from-real-imag coerce-em)
+(provide type-tag exp apply-generic make-rational make-scheme-number 
+         make-complex-from-real-imag coerce-em make-integer raise drop project make-real)
 
 (define (gcd a b)
     (if (= b 0) 
         a 
         (gcd b (remainder a b))))
-        
+
 ; the generic operations that act on regular numbers,
 ; rationals, and complex numbers
 (define (add x y) (apply-generic 'add x y))
@@ -20,7 +21,44 @@
 (define (exp x y) 
   (apply-generic 'exp x y))
 (define (raise x) (apply-generic 'raise x))
+(define (project x) (apply-generic 'project x))
+(define (tower-loc? x)
+  (let ((taggy (type-tag x)))
+    (cond ((or (eq? taggy 'scheme-number) (eq? taggy 'integer)) 0)
+          ((eq? taggy 'rational)   1)
+          ((eq? taggy 'real)       2)
+          ((eq? taggy 'complex)    3)
+          (else (error "bad type tag: tower-loc?")))))
+(define (higher-type? x y) 
+  (let ((tl-x (tower-loc? x)) (tl-y (tower-loc? y)))
+    (if (> tl-x tl-y) x y)))
+(define (highest-in-list list)
+  (define (helper holder lst) 
+    (if (empty? lst) 
+      holder
+      (helper (higher-type? holder (car lst)) (cdr lst))))
+  (helper (car list) (cdr list))) 
 
+(define (raise-em argslist)
+  (if (loop-eq? (type-tag (highest-in-list argslist)) (map type-tag argslist)) 
+    argslist 
+    (raise-em (map 
+                (lambda (a) 
+                  (if (> (tower-loc? (highest-in-list argslist)) (tower-loc? a)) 
+                    (raise a) 
+                    a)) 
+                argslist))))
+
+(define (apply-generic op . args)
+  (let ((proc (get op (map type-tag args))))
+    (if proc 
+      (apply proc (map contents args))
+      (let ((dropped-args (raise-em (map drop args))))
+        (let ((proc2 (get op (map type-tag dropped-args))))
+          (if proc2
+            (apply proc2 (map contents dropped-args))
+            (error "none fo dese doggy...")))))))
+  
 ; regular (scheme) numbers
 (define (install-scheme-number-package)
   (define (tag x)
@@ -48,6 +86,32 @@
 
 (define (make-scheme-number n)
   ((get 'make 'scheme-number) n))
+
+(define (install-integer-package)
+  (define (tag x) (attach-tag 'integer x))
+  (put 'add '(integer integer)
+       (lambda (x y) (tag (+ x y))))
+  (put 'sub '(integer integer)
+       (lambda (x y) (tag (- x y))))
+  (put 'mul '(integer integer)
+       (lambda (x y) (tag (* x y))))
+  (put 'div '(integer integer)
+       (lambda (x y) (tag (/ x y))))
+  (put 'equal '(integer integer)
+       (lambda (x y) (= x y)))
+  (put 'make 'integer
+       (lambda (x) 
+         (if (integer? x) (tag x) (error "Not an integer"))))
+  (put 'eqzero '(integer) (lambda (x) (= 0 x)))
+  (put 'exp '(integer integer)
+       (lambda (x y) 
+           (tag (expt x y))))
+  (put 'raise '(integer) (lambda (x) (make-rational x 1)))
+  (put 'project '(integer) (lambda (x) x))
+  'done)
+
+(install-integer-package)
+(define (make-integer n) ((get 'make 'integer) n))
 
 (define (install-rational-package)
   ;; internal procedures
@@ -87,13 +151,41 @@
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
   (put 'eqzero '(rational) (lambda (x) (=zero?-rat x)))
-  (put 'raise '(rational) (lambda (x) (make-complex-from-real-imag ())))
+  (put 'raise '(rational) (lambda (x) (make-real (/ (numer x) (denom x)))))
+  (put 'project '(rational) (lambda (x) (make-integer (round (/ (numer x) (denom x))))))
   'done)
 
 (install-rational-package)
 
 (define (make-rational n d)
   ((get 'make 'rational) n d))
+
+(define (install-real-package)
+  (define (tag x) (attach-tag 'real x))
+  (define (make-real r) (if (real? r) (tag r) (error "Not a real number")))
+  (define (put-for-real op func) (put op '(real real) func))
+  (put-for-real 'add (lambda (r1 r2) (tag (+ r1 r2))))
+  (put-for-real 'sub (lambda (r1 r2) (tag (- r1 r2))))
+  (put-for-real 'mul (lambda (r1 r2) (tag (* r1 r2))))
+  (put-for-real 'div (lambda (r1 r2) (tag (/ r1 r2))))
+  (put-for-real 'equal (lambda (r1 r2) (= r1 r2)))
+  (put 'make 'real make-real)
+  (put 'eqzero '(real) (lambda (r) (= 0 r)))
+  (put 'raise '(real) (lambda (r) (make-complex-from-real-imag r 0)))
+  (put 'project '(real) (lambda (r) (make-rational (inexact->exact (numerator r)) (inexact->exact (denominator r)))))
+  'done)
+
+(install-real-package)
+(define (make-real r) ((get 'make 'real) r))
+
+(define (real-part z) 
+  (apply-generic 'real-part z))
+(define (imag-part z) 
+  (apply-generic 'imag-part z))
+(define (magnitude z) 
+  (apply-generic 'magnitude z))
+(define (angle z) 
+  (apply-generic 'angle z))
 
 (define (install-complex-package)
   ;; imported procedures from rectangular 
@@ -145,8 +237,11 @@
          (tag (make-from-mag-ang r a))))
   (put 'magnitude '(complex) magnitude)
   (put 'angle '(complex) angle)
+  (put 'real-part '(complex) real-part)
+  (put 'imag-part '(complex) imag-part)
   (put 'equal '(complex complex) (lambda (z1 z2) (equal-complex z1 z2)))
   (put 'eqzero '(complex) (lambda (z) (equal-complex z (make-from-mag-ang 0 0))))
+  (put 'project '(complex) (lambda (z) (make-real (real-part z))))
   'done)
 
 (install-complex-package)
@@ -159,5 +254,12 @@
 (define (scheme-number->complex n)
   (make-complex-from-real-imag 
    (contents n) 0))
+
+(define (drop num) 
+  (let ((tt (type-tag num)))
+    (if (eq? tt 'integer) 
+      num 
+      (let ((dnum (project num)))
+        (if (equ? (raise dnum) num) (drop dnum) num)))))
 
 (put-coercion 'scheme-number 'complex scheme-number->complex)

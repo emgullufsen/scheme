@@ -1,8 +1,8 @@
 #lang racket
 (require "table-e.rkt")
 
-(provide real-part imag-part magnitude angle apply-generic apply-generic-general square
-         attach-tag type-tag contents rectangular? polar? same-type? coerce-em)
+(provide apply-generic-general square attach-tag type-tag contents rectangular? polar? same-type? 
+         coerce-em loop-eq?)
          
 (define (square x) (* x x))
 
@@ -150,12 +150,3 @@
 
 (install-rectangular-package)
 (install-polar-package)
-
-(define (real-part z) 
-  (apply-generic 'real-part z))
-(define (imag-part z) 
-  (apply-generic 'imag-part z))
-(define (magnitude z) 
-  (apply-generic 'magnitude z))
-(define (angle z) 
-  (apply-generic 'angle z))
