@@ -1,8 +1,99 @@
 #lang racket
 (require "table-e.rkt")
-(require "rectangular-polar.rkt")
+
 (provide type-tag exp apply-generic make-rational make-scheme-number 
-         make-complex-from-real-imag coerce-em make-integer raise drop project make-real)
+         make-complex-from-real-imag make-integer raise drop project make-real)
+
+(define (square x) ((get 'mul (map type-tag (list x x))) (contents x) (contents x)))
+
+(define (attach-tag type-tag contents)
+    (if (eq? type-tag 'scheme-number)
+        contents
+        (cons type-tag contents)
+    )
+)
+
+(define (type-tag datum)
+  (cond ((pair? datum) (car datum))
+        ((number? datum) 'scheme-number)
+        (else (error "Bad tagged datum: 
+              TYPE-TAG" datum))))
+
+(define (loop-eq? e lst) 
+  (if (empty? lst) 
+    '#t
+    (if (eq? e (car lst)) (loop-eq? e (cdr lst)) '#f)))
+
+(define (contents datum)
+  (cond ((pair? datum) (cdr datum))
+        ((number? datum) datum)
+        (else (error "Bad tagged datum: 
+              CONTENTS" datum))))
+
+(define (rectangular? z)
+  (eq? (type-tag z) 'rectangular))
+
+(define (polar? z)
+  (eq? (type-tag z) 'polar))
+
+(define (same-type? o1 o2) (eq? (type-tag o1) (type-tag o2)))
+
+(define (install-rectangular-package)
+  ;; internal procedures
+  (define (real-part z) (car z))
+  (define (imag-part z) (cdr z))
+  (define (make-from-real-imag x y) 
+    (cons x y))
+  (define (magnitude z)
+    (square-root (apply-generic 'add (square (real-part z))
+             (square (imag-part z)))))
+  (define (angle z)
+    (arctangent (imag-part z) (real-part z)))
+  (define (make-from-mag-ang r a)
+    (cons (apply-generic 'mul r (cosine a)) (apply-generic 'mul r (sine a))))
+  ;; interface to the rest of the system
+  (define (tag x) 
+    (attach-tag 'rectangular x))
+  (put 'real-part '(rectangular) real-part)
+  (put 'imag-part '(rectangular) imag-part)
+  (put 'magnitude '(rectangular) magnitude)
+  (put 'angle '(rectangular) angle)
+  (put 'make-from-real-imag 'rectangular
+       (lambda (x y) 
+         (tag (make-from-real-imag x y))))
+  (put 'make-from-mag-ang 'rectangular
+       (lambda (r a) 
+         (tag (make-from-mag-ang r a))))
+  'done)
+
+(define (install-polar-package)
+  ;; internal procedures
+  (define (magnitude z) (car z))
+  (define (angle z) (cdr z))
+  (define (make-from-mag-ang r a) (cons r a))
+  (define (real-part z)
+    (apply-generic 'mul (magnitude z) (cosine (angle z))))
+  (define (imag-part z)
+    (apply-generic 'mul (magnitude z) (sine (angle z))))
+  (define (make-from-real-imag x y)
+    (cons (square-root (+ (square x) (square y)))
+          (arctangent y x)))
+  ;; interface to the rest of the system
+  (define (tag x) (attach-tag 'polar x))
+  (put 'real-part '(polar) real-part)
+  (put 'imag-part '(polar) imag-part)
+  (put 'magnitude '(polar) magnitude)
+  (put 'angle '(polar) angle)
+  (put 'make-from-real-imag 'polar
+       (lambda (x y) 
+         (tag (make-from-real-imag x y))))
+  (put 'make-from-mag-ang 'polar
+       (lambda (r a) 
+         (tag (make-from-mag-ang r a))))
+  'done)
+
+(install-rectangular-package)
+(install-polar-package)
 
 (define (gcd a b)
     (if (= b 0) 
@@ -20,6 +111,10 @@
 ; for exercise 2.81 - only defined & installed for scheme-numbers 
 (define (exp x y) 
   (apply-generic 'exp x y))
+(define (square-root x) (apply-generic 'sqrt x))
+(define (arctangent x y) (apply-generic 'atan x y))
+(define (cosine a) (apply-generic 'cos a))
+(define (sine a) (apply-generic 'sin a))
 (define (raise x) (apply-generic 'raise x))
 (define (project x) (apply-generic 'project x))
 (define (tower-loc? x)
@@ -79,6 +174,10 @@
   (put 'exp '(scheme-number scheme-number)
        (lambda (x y) 
            (tag (expt x y))))
+  (put 'sqrt '(scheme-number) (lambda (x) (sqrt x)))
+  (put 'atan '(scheme-number scheme-number) (lambda (x y) (atan x y)))
+  (put 'sin '(scheme-number) (lambda (x) (sin x)))
+  (put 'cos '(scheme-number) (lambda (x) (cos x)))
   (put 'raise '(scheme-number) (lambda (x) (make-rational x 1)))
   'done)
 
@@ -106,6 +205,10 @@
   (put 'exp '(integer integer)
        (lambda (x y) 
            (tag (expt x y))))
+  (put 'sqrt '(integer) (lambda (x) (sqrt x)))
+  (put 'atan '(integer integer) (lambda (x y) (atan x y)))
+  (put 'sin '(integer) (lambda (x) (sin x)))
+  (put 'cos '(integer) (lambda (x) (cos x)))
   (put 'raise '(integer) (lambda (x) (make-rational x 1)))
   (put 'project '(integer) (lambda (x) x))
   'done)
@@ -134,6 +237,20 @@
   (define (div-rat x y)
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
+  (define (sqrt-rat x) (make-rat 
+                         (numerator (inexact->exact (sqrt (/ (numer x) (denom x))))) 
+                         (denominator (inexact->exact (sqrt (/ (numer x) (denom x)))))))
+  (define (apply-helper-rat proc x y)
+          (let ((newx (/ (numer x) (denom x))) (newy (/ (numer y) (denom y))))
+            (let ((result (inexact->exact (proc newx newy))))
+              (make-rat (numerator result) (denominator result)))))
+  (define (apply-helper-rat-1 proc x)
+          (let ((newx (/ (numer x) (denom x))))
+            (let ((result (inexact->exact (proc newx))))
+              (make-rat (numerator result) (denominator result)))))
+  
+  (define (atan-rat x y) 
+          (apply-helper-rat atan x y))
   (define (equal-rat x y) (and (= (numer x) (numer y)) (= (denom x) (denom y))))
   (define (=zero?-rat x) (= 0 (numer x)))
   ;; interface to rest of the system
@@ -146,6 +263,11 @@
        (lambda (x y) (tag (mul-rat x y))))
   (put 'div '(rational rational)
        (lambda (x y) (tag (div-rat x y))))
+  (put 'sqrt '(rational) (lambda (x) (tag (sqrt-rat x))))
+  (put 'atan '(rational rational) (lambda (x y) (tag (atan-rat x y))))
+  (put 'sin '(rational) (lambda (x) (tag (apply-helper-rat-1 sin x))))
+  (put 'cos '(rational) (lambda (x) (tag (apply-helper-rat-1 cos x))))                          
+  (put 'cos '(rational rational) (lambda (x y) (tag (apply-helper-rat cos x y))))
   (put 'equal '(rational rational)
        (lambda (x y) (equal-rat x y)))
   (put 'make 'rational
