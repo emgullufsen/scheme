@@ -2,9 +2,6 @@
 (require "table-e.rkt")
 (require "general-arithmetic.rkt")
 
-(define (make-polynomial var terms)
-  ((get 'make 'polynomial) var terms))
-
 (define (adjoin-term term term-list)
   (if (=zero? (coeff term))
       term-list
@@ -19,7 +16,7 @@
 (define (order term) (car term))
 (define (coeff term) (cadr term))
 
-(define (add-terms-gen L1 L2) ())
+;(define (add-terms-gen L1 L2) ())
 
 (define (add-terms L1 L2)
   (cond ((empty-termlist? L1) L2)
@@ -117,3 +114,10 @@
   'done)
 
 (install-polynomial-package)
+(define (make-polynomial var terms)
+  ((get 'make 'polynomial) var terms))
+
+(define ex-poly 
+    (make-polynomial 
+        'x 
+        (list (make-term 3 6) (make-term 2 4) (make-term 1 -2) (make-term 0 -1))))
