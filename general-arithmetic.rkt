@@ -2,7 +2,8 @@
 (require "table-e.rkt")
 
 (provide type-tag exp apply-generic make-rational make-scheme-number 
-         make-complex-from-real-imag make-integer raise drop project make-real)
+         make-complex-from-real-imag make-integer raise drop project 
+         make-real attach-tag =zero? add sub mul div loop-eq? contents)
 
 (define (square x) ((get 'mul (map type-tag (list x x))) (contents x) (contents x)))
 
