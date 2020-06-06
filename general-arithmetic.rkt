@@ -16,7 +16,7 @@
 
 (define (type-tag datum)
   (cond ((pair? datum) (car datum))
-        ((number? datum) 'scheme-number)
+        ((number? datum) 'integer)
         (else (error "Bad tagged datum: 
               TYPE-TAG" datum))))
 
@@ -380,7 +380,7 @@
 
 (define (drop num) 
   (let ((tt (type-tag num)))
-    (if (eq? tt 'integer) 
+    (if (or (eq? tt 'integer) (eq? tt 'scheme-number)) 
       num 
       (let ((dnum (project num)))
         (if (equ? (raise dnum) num) (drop dnum) num)))))

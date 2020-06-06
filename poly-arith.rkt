@@ -11,53 +11,64 @@
   (list order coeff))
 (define (order term) (car term))
 (define (coeff term) (cadr term))
-
+(define zero (make-integer 0))
 (define (add-terms L1 L2) (apply-generic 'add-terms L1 L2))
 (define (mul-terms L1 L2) (apply-generic 'mul-terms L1 L2))
 ;; dense system
 ;; polys are lists of coefficients here
 (define (install-dense-package)
+    (define (order-dense-list dl) (- (length dl) 1))
     (define (adjoin-term-dense term term-list)
         (if (=zero? (coeff term))
             term-list
-            (cons (coeff term) term-list)))
+            (let ((ot (order term)) (otl (order-dense-list term-list)))
+              (cond ((= ot (+ otl 1)) (cons (coeff term) term-list))
+                    ((> ot otl) (adjoin-term-dense term (cons zero term-list)))
+                    (else (error "bad term"))
+              )
+            )
+    ))
     (define (add-terms-dense L1 L2)
         (cond ((empty-termlist? L1) L2)
               ((empty-termlist? L2) L1)
               (else
                 (let ((t1 (first-term L1)) 
                       (t2 (first-term L2))
-                      (len1 (length L1))
-                      (len2 (length L2)))
-                        (let ((order1 (- len1 1)) (order2 (- len2 1)))
-                            (cond 
-                                ((> order1 order2) 
-                                    (adjoin-term-dense t1 (add-terms (rest-terms L1) L2)))
-                                ((< order1 order2) 
-                                    (adjoin-term-dense t2 (add-terms L1 (rest-terms L2))))
-                                (else              
-                                    (adjoin-term-dense
-                                        (make-term 
-                                            (order1)
-                                            (add t1 t2))
-                                        (add-terms 
-                                            (rest-terms L1)
-                                            (rest-terms L2))))))))))
-    (define (mul-terms-dense L1 L2) 
+                      (order1 (order-dense-list L1))
+                      (order2 (order-dense-list L2)))
+                    (cond ((> order1 order2)
+                            (adjoin-term-dense (make-term order1 t1) (add-terms-dense (rest-terms L1) L2)))
+                          ((< order1 order2)
+                            (adjoin-term-dense (make-term order2 t2) (add-terms-dense L1 (rest-terms L2))))
+                          (else
+                            (adjoin-term-dense
+                                (make-term order1 (add t1 t2))
+                                (add-terms-dense (rest-terms L1) (rest-terms L2)))))))))
+    (define (mul-terms-dense L1 L2)
         (if (empty-termlist? L1)
             (the-empty-termlist)
-            (add-terms-dense (mul-term-by-all-terms-dense (make-term (- (length L1) 1) (first-term L1)) L2) (mul-terms-dense (rest-terms L1) L2))))
-    (define (mul-term-by-all-terms-dense t1 L) 
+            (add-terms-dense 
+                (mul-term-by-all-terms-dense (make-term (order-dense-list L1) (car L1)) L2)
+                (mul-terms-dense (rest-terms L1) L2))))
+
+    (define (mul-term-by-all-terms-dense t1 L)
         (if (empty-termlist? L)
             (the-empty-termlist)
-            (let ((t2 (make-term (- (length L) 1) (first-term L))))
-                (adjoin-term-dense
-                    (make-term (+ (order t1) (order t2)) (mul (coeff t1) (coeff t2)))
-                    (mul-term-by-all-terms-dense t1 (rest-terms L))))))
+            (adjoin-term-dense (make-term (+ (order t1) (order-dense-list L)) (mul (coeff t1) (car L))) (mul-term-by-all-terms-dense t1 (rest-terms L)))))
+    ;; coercion - dense to sparse (6 8 3) -> ((6 2) (8 1) (3 0))
+    ;; go through dense lists and create list of terms...
+    ;; I didn't alias an accessor as in 'coeff-dense' which is just car...
+    (define (terms-from-dense dl) 
+      (if (empty-termlist? dl) 
+        dl
+        (cons (make-term (order-dense-list dl) (car dl)) (terms-from-dense (cdr dl)))
+      ))
+    (define (dense->sparse dl) 
+      ((get 'make-from-terms 'sparse) (terms-from-dense dl)))
     (define (tag x) (attach-tag 'dense x))
     (put 'add-terms '(dense dense) (lambda (L1 L2) (tag (add-terms-dense L1 L2))))
     (put 'mul-terms '(dense dense) (lambda (L1 L2) (tag (mul-terms-dense L1 L2))))
-    (put 'make 'dense (lambda (l) (tag l)))
+    (put 'make-from-coeffs 'dense (lambda (l) (tag l)))
     'done-dense
 )
 
@@ -100,15 +111,13 @@
     (define (tag x) (attach-tag 'sparse x))
     (put 'add-terms '(sparse sparse) (lambda (L1 L2) (tag (add-terms-sparse L1 L2))))
     (put 'mul-terms '(sparse sparse) (lambda (L1 L2) (tag (mul-terms-sparse L1 L2))))
-    (put 'make 'sparse (lambda (l) (tag l)))
+    (put 'make-from-terms 'sparse (lambda (l) (tag l)))
     'done-sparse
 )
 
 (install-sparse-package)
 
 (define (install-polynomial-package)
-  ;; internal procedures
-  ;; representation of poly
   (define (make-poly variable term-list)
     (cons variable term-list))
   (define (variable p) (car p))
@@ -148,23 +157,27 @@
   (put 'mul '(polynomial polynomial)
        (lambda (p1 p2) 
          (tag (mul-poly p1 p2))))
-  (put 'make-sparse 'polynomial
+  (put 'make-poly-from-terms 'polynomial
        (lambda (var terms) 
-         (tag (make-poly-sparse var terms))))
-  (put 'make-dense 'polynomial
+         (tag (make-poly var ((get 'make-from-terms 'sparse) terms)))))
+  (put 'make-poly-from-coeffs 'polynomial
        (lambda (var terms)
-         (tag (make-poly-dense var terms))))
+         (tag (make-poly var ((get 'make-from-coeffs 'dense) terms)))))
   ;(put 'eqzero '(polynomial) (lambda (p) (or (empty-termlist? (term-list p)) (loop-eq? 0 (map coeff (term-list p))))))
   'done-poly
 )
 (install-polynomial-package)
-(define (make-polynomial-sparse var terms)
-  ((get 'make-sparse 'polynomial) var terms))
+(define (make-polynomial-from-terms var terms)
+  ((get 'make-poly-from-terms 'polynomial) var terms))
 
-(define (make-polynomial-dense var terms) 
-    ((get 'make-dense 'polynomial) var terms))
+(define (make-polynomial-from-coeffs var terms) 
+    ((get 'make-poly-from-coeffs 'polynomial) var terms))
 
-(define ex-poly 
-    (make-polynomial-sparse
+(define ex-poly-sparse 
+    (make-polynomial-from-terms
         'x 
         (list (make-term 3 6) (make-term 2 4) (make-term 1 -2) (make-term 0 -1))))
+
+(define ex-poly-dense
+  (make-polynomial-from-coeffs 'x (list 3 4))
+)
