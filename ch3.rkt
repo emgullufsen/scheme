@@ -53,11 +53,11 @@
 
 (define (estimate-integral P x1 x2 y1 y2)
     (define the-experiment 
-        (lambda () (let ((ran-x (* (random) (expt -1 (random 2)))) (ran-y (* (random) (expt -1 (random 2)))))
+        (lambda () (let ((ran-x (random-in-range x1 x2)) (ran-y (random-in-range y1 y2)))
                         (P ran-x ran-y))))
-    (* (monte-carlo (expt 2 22) the-experiment) (* (- x2 x1) (- y2 y1))))
+    (* (monte-carlo (expt 2 22) the-experiment) 4))
 
-(define in-unit-circle? (lambda (x y) (< (+ (expt x 2) (expt y 2)) 1)))
+(define in-unit-100K-circle? (lambda (x y) (< (+ (expt x 2) (expt y 2)) (expt 100000 2))))
 
 (define (estimate-pi trials)
   (sqrt (/ 6 (monte-carlo trials cesaro-test))))
