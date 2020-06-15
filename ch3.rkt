@@ -45,7 +45,9 @@
 
 (define rand
   (let ((x random-init))
-    (lambda () (set! x (rand-update x)) x)))
+    (lambda (symbol) (cond ((eq? symbol 'generate) (begin (set! x (rand-update x)) x))
+                           ((eq? symbol 'reset) (lambda (newvalue) (set! x newvalue)))
+                           (else (error "Bad argument to rand (must be generate or reset [x]"))))))
 
 (define (random-in-range low high)
     (let ((range (- high low)))
