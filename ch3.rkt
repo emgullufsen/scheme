@@ -36,14 +36,33 @@
 
 (define (call-the-cops) (display "you did it now bud!"))
 
+(define random-max (expt 2 31))
+(define random-init 13)
+(define a 1664525)
+(define b 1013904223)
+(define m (expt 2 32))
+(define rand-update (lambda (x) (remainder (+ (* a x) b) m)))
+
 (define rand
   (let ((x random-init))
     (lambda () (set! x (rand-update x)) x)))
 
+(define (random-in-range low high)
+    (let ((range (- high low)))
+        (+ low (random range))))
+
+(define (estimate-integral P x1 x2 y1 y2)
+    (define the-experiment 
+        (lambda () (let ((ran-x (* (random) (expt -1 (random 2)))) (ran-y (* (random) (expt -1 (random 2)))))
+                        (P ran-x ran-y))))
+    (* (monte-carlo (expt 2 22) the-experiment) (* (- x2 x1) (- y2 y1))))
+
+(define in-unit-circle? (lambda (x y) (< (+ (expt x 2) (expt y 2)) 1)))
+
 (define (estimate-pi trials)
   (sqrt (/ 6 (monte-carlo trials cesaro-test))))
 (define (cesaro-test)
-   (= (gcd (rand) (rand)) 1))
+   (= (gcd (random random-max) (random random-max)) 1))
 
 (define (monte-carlo trials experiment)
   (define (iter trials-remaining trials-passed)
