@@ -13,8 +13,12 @@
                   (else (begin (set! counter (+ counter 1)) (fn inp)))))
         mf))
 
+(define (in-list? in list)
+    (if (empty? list) '#f (if (eq? in (car list)) '#t (in-list? in (cdr list))))
+)
+
 (define (make-account balance pwd)
-    (let ((access-counter 0))
+    (let ((access-counter 0) (other-passwords '()))
         (define (withdraw amount)
             (if (>= balance amount)
                 (begin (set! balance (- balance amount)) balance)
@@ -22,11 +26,14 @@
         (define (deposit amount)
             (set! balance (+ balance amount))
             balance)
+        (define (add-password new-password)
+            (set! other-passwords (cons new-password other-passwords)))
         (define (dispatch p m)
-            (if (eq? p pwd)
+            (if (or (eq? p pwd) (in-list? p other-passwords))
                 (begin (set! access-counter 0)
                        (cond ((eq? m 'withdraw) withdraw)
                              ((eq? m 'deposit) deposit)
+                             ((eq? m 'add-password) add-password)
                              (else (error "Unknown request: MAKE-ACCOUNT" m))))
                 (if (> access-counter 2) 
                     (begin (call-the-cops) (error "Exceeded MAX-PASSWORD-INCORRECT!"))
@@ -35,6 +42,10 @@
     dispatch))
 
 (define (call-the-cops) (display "you did it now bud!"))
+
+(define (make-joint-account first-account first-password second-password)
+    (begin ((first-account first-password 'add-password) second-password) first-account)
+)
 
 (define random-max (expt 2 31))
 (define random-init 13)
