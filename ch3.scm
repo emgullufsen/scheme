@@ -88,17 +88,3 @@
            (iter (- trials-remaining 1) 
                  trials-passed))))
   (iter trials 0))
-
-;; (+ (f 0) (f 1))
-;; such that:
-;; return 0 if args eval left to right but 1 if right to left
-(define f 
-    (let ((numcalls 0))
-        (lambda (n) 
-            (if (= n 0)
-                (if (= numcalls 0)
-                    (begin (set! numcalls (+ numcalls 1)) 0)
-                    (begin (set! numcalls 0) 0))
-                (if (= numcalls 0)
-                    (begin (set! numcalls (+ numcalls 1)) 1)
-                    (begin (set! numcalls 0) 0))))))
