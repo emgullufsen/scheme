@@ -1,53 +1,37 @@
 ;; eg
 ;; sicp 3.3.3 - 2D tables
+;; exercise 3.25 done baby!
 (define (assoc key records)
   	(cond ((null? records) false)
 	      ((equal? key (caar records)) (car records))
 	      (else (assoc key (cdr records)))))
 
+(define (make-subtable keys value)
+  (if (null? (cdr keys))
+      (cons (car keys) value)
+      (list (car keys) (make-subtable (cdr keys) value))))
+
 (define (make-table)
   (let ((local-table (list '*table*)))
+
     (define (lookup keys)
-	(let lookup-helper ((ks keys) (rec (assoc (car keys) (cdr local-table))))
+	(let lookup-helper ((k keys) (t local-table))
+	  (let ((rec (assoc (car k) (cdr t))))
 	    (if rec
-		(if (null? (cdr ks))
-		    rec
-		    (if (null? (cdr rec))
-			(error "too many keys")
-		    	(lookup-helper (cdr ks) (assoc (cadr ks) (cdr rec)))))
-		false)))
+		(if (null? (cdr k))
+		    (cdr rec)
+		    (lookup-helper (cdr k) rec))
+		false))))
+    
     (define (insert! keys value)
-      (let insert-helper ((ks keys) (rec (assoc (car keys) (cdr local-table))))
-	(if rec
-	  (if (null? (cdr ks))
-	      rec
-	      (if (null? (cdr rec))
-			(error "too many keys")
-		    	(insert-helper (cdr ks) (assoc (cadr ks) (cdr rec))))
-	false)))))
+	(let insert!-helper ((k keys) (t local-table))
+	  (let ((rec (assoc (car k) (cdr t))))
+	    (if rec
+		(if (null? (cdr k))
+		    (set-cdr! rec value)
+		    (insert!-helper (cdr k) rec))
+		(set-cdr! local-table (cons (make-subtable keys value) (cdr local-table)))))))
 
-
-      (let ((subtable (assoc key-1 (cdr local-table))))
-	(if subtable
-	    (let ((record (assoc key-2 (cdr subtable))))
-	      (if record
-		  (cdr record)
-		  false))
-	    false)))
-    (define (insert! key-1 key-2 value)
-      (let ((subtable (assoc key-1 (cdr local-table))))
-	(if subtable
-	    (let ((record (assoc key-2 (cdr subtable))))
-	      (if record
-		  (set-cdr! record value)
-		  (set-cdr! subtable
-			    (cons (cons key-2 value)
-				  (cdr subtable)))))
-	    (set-cdr! local-table
-		      (cons (list key-1
-		  		  (cons key-2 value))
-			    (cdr local-table)))))
-      'ok)
     (define (dispatch m)
       (cond ((eq? m 'lookup-proc) lookup)
 	    ((eq? m 'insert-proc!) insert!)
