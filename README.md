@@ -1,3 +1,4 @@
-# scheme
+# scheme written for SICP exercises *aka wizard book*
 
-```okey doke```
+`(cons 'eric (cons 'mikey (cons 'gull '())))`
+
