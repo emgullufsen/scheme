@@ -34,6 +34,12 @@
           	(or-gate c1 c2 c-out)
           	'ok))
 
+(define (ripple-carry-adder as bs ss cout)
+  (let rip-carry ((ass as) (bss bs) (sss ss) (coutt cout) (cin (make-wire)))
+    (if (null? ass)
+      'ok-done-ripple-carry
+      (begin (full-adder (car ass) (car bss) cin (car sss) coutt) (rip-carry (cdr ass) (cdr bss) (cdr sss) cin (make-wire))))))
+
 (define (inverter input output)
     (define (invert-input)
           (let ((new-value (logical-not (get-signal input))))
