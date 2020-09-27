@@ -113,6 +113,31 @@
   (connect b me)
   me)
 
+(define (c+ x y)
+  (let ((z (make-connector)))
+    (adder x y z)
+    z))
+
+(define (c- a b)
+  (let ((c (make-connector)))
+    (adder b c a)
+    c))
+
+(define (c* a b)
+  (let ((c (make-connector)))
+    (multiplier a b c)
+    c))
+
+(define (c/ a b)
+  (let ((c (make-connector)))
+    (multiplier b c a)
+    c))
+
+(define (cv val)
+  (let ((c (make-connector)))
+    (constant val c)
+    c))
+
 (define (constant value connector)
   (define (me request)
     (error "Unknown request: CONSTANT" 
