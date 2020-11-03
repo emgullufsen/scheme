@@ -1,6 +1,6 @@
 ;; emg SICP chapter 3.4.2 stuff
-
-(define (make-account-and-serializer balance)
+;; exercise 3.47
+(define (make-account-and-serializer balance acct-num)
   (define (withdraw amount)
     (if (>= balance amount)
         (begin 
@@ -18,10 +18,30 @@
             ((eq? m 'balance) balance)
             ((eq? m 'serializer) 
              balance-serializer)
+            ((eq? m 'peek-acct-num) acct-num)
             (else (error "Unknown request: 
                           MAKE-ACCOUNT"
                          m))))
     dispatch))
+
+(define (exchange account1 account2)
+  (let ((difference (- (account1 'balance)
+                       (account2 'balance))))
+    ((account1 'withdraw) difference)
+    ((account2 'deposit) difference)))
+
+(define (serialized-exchange account1 account2)
+  (let ((serializer1 (account1 'serializer))
+        (serializer2 (account2 'serializer))
+        (acc1num (account1 'peek-acct-num))
+        (acc2num (account2 'peek-acct-num)))
+    (if (<= acc1num acc2num)
+      ((serializer1 (serializer2 exchange))
+        account1
+        account2)
+      ((serializer2 (serializer1 exchange))
+        account1
+        account2))))
 
 (define (make-serializer)
   (let ((mutex (make-mutex)))
@@ -50,13 +70,6 @@
       (begin (set-car! cell true)
              false)))
 
-; (define (make-semaphore-a n)
-;     (let ((muxs make-list n (make-mutex)))
-;         (define (get-one) 
-;             ())
-;         (define (the-semaphore m)
-;             (cond ((eq? m 'acquire) (get-one))))))
-
 (define (get-one l)
     (let get-one-helper ((listy l))
         (if (null? listy)
@@ -71,9 +84,6 @@
         '() 
         (let ((z (list false)))
             (cons z (get-falses (- k 1))))))
-
-(define (cons-of-these k this)
-    (if (= k 0) '() (cons this (cons-of-these (- k 1) this))))
 
 (define (make-semaphore-b n)
     (let ((cells (get-falses n)))
