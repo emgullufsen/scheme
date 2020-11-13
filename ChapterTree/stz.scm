@@ -16,6 +16,10 @@
  
 (define factorials (cons-stream 1 (mul-streams factorials integers)))
 
+(define (partial-sums s)
+  (define ss (cons-stream (car s) (add-streams ss (stream-cdr s))))
+  ss)
+
 (define (stream-enumerate-interval low high)
   (if (> low high)
       the-empty-stream
