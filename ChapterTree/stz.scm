@@ -73,3 +73,15 @@
 
 ;; exercise 3.56
 (define S1 (cons-stream 1 (merge (scale-stream S1 2) (merge (scale-stream S1 3) (scale-stream S1 5)))))
+
+;; exercise 3.60
+(define (mul-series s1 s2)
+  (cons-stream
+   (* (stream-car s1) (stream-car s2))
+   (add-streams
+    (add-streams
+     (scale-stream s1 (stream-car s2))
+     (scale-stream s2 (stream-car s1)))
+    (cons-stream
+     0
+     (mul-series (stream-cdr s1) (stream-cdr s2))))))
