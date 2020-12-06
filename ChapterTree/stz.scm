@@ -58,6 +58,7 @@
 
 (define sine-series
   (cons-stream 0 (integrate-series cosine-series)))
+
 (define (merge s1 s2)
   (cond ((stream-null? s1) s2)
         ((stream-null? s2) s1)
@@ -93,8 +94,8 @@
    (* (stream-car s1) (stream-car s2))
    (add-streams
     (add-streams
-     (scale-stream s1 (stream-car s2))
-     (scale-stream s2 (stream-car s1)))
+     (scale-stream (stream-cdr s1) (stream-car s2))
+     (scale-stream (stream-cdr s2) (stream-car s1)))
     (cons-stream
      0
      (mul-series (stream-cdr s1) (stream-cdr s2))))))
