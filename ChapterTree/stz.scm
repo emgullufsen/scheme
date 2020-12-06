@@ -45,6 +45,19 @@
    show 
    (stream-enumerate-interval 0 10)))
 
+(define invints (stream-map (lambda (i) (/ 1 i)) integers))
+
+;; exercise 3.59 part a.
+(define (integrate-series s) (mul-streams s invints))
+
+;; part b.
+(define exp-series (cons-stream 1 (integrate-series exp-series)))
+
+(define cosine-series
+  (cons-stream 1 (integrate-series (stream-map (lambda (h) (* h -1)) sine-series))))
+
+(define sine-series
+  (cons-stream 0 (integrate-series cosine-series)))
 (define (merge s1 s2)
   (cond ((stream-null? s1) s2)
         ((stream-null? s2) s1)
