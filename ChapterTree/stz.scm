@@ -100,5 +100,17 @@
      0
      (mul-series (stream-cdr s1) (stream-cdr s2))))))
 
+;; exercise 3.61
 (define (invert-unit-series S)
   (cons-stream 1 (mul-series (scale-stream -1 (stream-cdr S)) (invert-unit-series S))))
+
+;; exercise 3.62
+(define (div-series S1 S2)
+  (if (= (stream-car S2) 0)
+    (error "denom const term == zero")
+    (mul-series 
+      S1 
+      (invert-unit-series 
+        (scale-stream 
+          (/ 1 (stream-car S2)) 
+          S2)))))
