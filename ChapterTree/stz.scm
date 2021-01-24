@@ -1,6 +1,27 @@
+(define (average one two) (/ (+ one two) 2))
 (define (display-line x)
   (newline)
   (display x))
+(define (stream-for-each proc s)
+  (if (stream-null? s)
+      'done
+      (begin 
+        (proc (stream-car s))
+        (stream-for-each proc 
+                         (stream-cdr s)))))
+
+(define (stream-for-each-protected proc s lim)
+  (if (< lim 1)
+      'done
+      (begin 
+        (proc (stream-car s))
+        (stream-for-each-protected proc (stream-cdr s) (- lim 1)))))
+
+(define (display-stream-limited s lim)
+  (stream-for-each-protected display-line s lim))
+
+(define (display-stream s)
+  (stream-for-each display-line s))
 
 (define (show x)
   (display-line x)
