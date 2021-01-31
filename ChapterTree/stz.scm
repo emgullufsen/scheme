@@ -20,6 +20,12 @@
 (define (display-stream-limited s lim)
   (stream-for-each-protected display-line s lim))
 
+(define (display-specials s lim)
+  (stream-for-each-protected
+   (lambda (i) (if (not (= 1 (car i))) (display-line i)))
+   s
+   lim))
+
 (define (display-stream s)
   (stream-for-each display-line s))
 
@@ -32,7 +38,7 @@
 (define (mul-streams s1 s2) (stream-map * s1 s2))
 
 (define ones (cons-stream 1 ones))
-
+(define integers-from-zero (cons-stream 0 (add-streams ones integers-from-zero)))
 (define integers (cons-stream 1 (add-streams ones integers)))
  
 (define factorials (cons-stream 1 (mul-streams factorials integers)))
