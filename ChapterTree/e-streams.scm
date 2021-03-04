@@ -81,21 +81,6 @@
                     s2car
                     (merge-pairs-streams s1 (stream-cdr s2) wf)))))))
 
-; (define (pairs-weighted s t w) 
-;   (cons-stream
-;    (list (stream-car s) (stream-car t))
-;    (merge-pairs-streams
-;     (stream-map (lambda (x) 
-;                   (list (stream-car s) x))
-;                 (stream-cdr t))
-;     (merge-pairs-streams
-;      (stream-map (lambda (x) 
-;                   (list x (stream-car t)))
-;                  (stream-cdr s))
-;      (pairs-correct (stream-cdr s) (stream-cdr t)) 
-;      w) 
-;     w)))
-
 (define (pairs-weighted s t w)
   (cons-stream
    (list (stream-car s) (stream-car t))
@@ -111,7 +96,12 @@
 (define (sum-cubed x y)
     (+ (* x x x) (* y y y)))
 
+(define (sum-squares x y)
+  (+ (* x x) (* y y)))
+
 (define ramaStream (pairs-weighted integers integers sum-cubed))
+
+(define ramaStream2 (pairs-weighted integers integers sum-squares))
 
 (define (ramanujan-numbers)
   (define (ramanujans all-sum-cubes)
@@ -124,5 +114,26 @@
                           (ramanujans (stream-cdr (stream-cdr all-sum-cubes)))))
             (else (ramanujans (stream-cdr all-sum-cubes))))))
   (ramanujans ramaStream))
+
+(define (ramanujan-trips)
+  (define (ramanujan-trips-helper all-sum-cubes)
+    (let* ((zero (stream-car all-sum-cubes))
+           (one  (stream-car (stream-cdr all-sum-cubes)))
+           (two  (stream-car (stream-cdr (stream-cdr all-sum-cubes))))
+           (zero-zero (car zero))
+           (zero-one  (cadr zero))
+           (one-zero  (car one))
+           (one-one   (cadr one))
+           (two-zero  (car two))
+           (two-one   (cadr two))
+           (score-zero (sum-squares zero-zero zero-one))
+           (score-one  (sum-squares one-zero one-one))
+           (score-two  (sum-squares two-zero two-one)))
+      (if (= score-zero score-one score-two)
+          (cons-stream 
+           (list score-zero zero one two)
+           (ramanujan-trips-helper (stream-cdr all-sum-cubes)))
+          (ramanujan-trips-helper (stream-cdr all-sum-cubes)))))
+  (ramanujan-trips-helper ramaStream2))
 
 (define (ans371 n) (display-stream-limited (ramanujan-numbers) n))
