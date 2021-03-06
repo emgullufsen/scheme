@@ -72,6 +72,62 @@
     (pairs (stream-cdr s) (stream-cdr t))
     wf)))
 
+(define (pairs-c s t wf) 
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (merge-pairs-streams
+    (stream-map (lambda (x) 
+                  (list (stream-car s) x))
+                (stream-cdr t))
+    (merge-pairs-streams 
+     (stream-map (lambda (x) 
+                  (list x (stream-car t)))
+                 (stream-cdr s))
+     (pairs-c (stream-cdr s) (stream-cdr t) wf)
+     wf) 
+    wf)))
+
+(define rama-c 
+  (pairs-c 
+   integers 
+   integers 
+   (lambda (a b) (+ (* a a a) (* b b b)))))
+
+(define rama-cc 
+  (pairs-weighted 
+   integers 
+   integers 
+   (lambda (a b) (+ (* a a a) (* b b b)))))
+
+(define (stream-for-each-protected-2 proc s lim)
+  (if (< lim 1)
+      'done
+      (begin 
+        (proc (stream-car s) (stream-car (stream-cdr s)))
+        (stream-for-each-protected-2 proc (stream-cdr s) (- lim 1)))))
+
+(define (weigher a b)
+  (let ((ca (car a)) (sa (cadr a)) (cb (car b)) (sb (cadr b)))
+    (if (= (+ (* ca ca ca) (* sa sa sa)) (+ (* cb cb cb) (* sb sb sb)))
+      #t
+      #f)))
+ 
+(define (go-rama-c z)
+  (stream-for-each-protected-2 
+   (lambda (a b)
+     (if (weigher a b)
+         (display-line a)))
+   rama-c
+   z))
+
+(define (go-rama-cc z)
+  (stream-for-each-protected-2 
+   (lambda (a b)
+     (if (weigher a b)
+         (display-line a)))
+   rama-cc
+   z))
+
 (define ones (cons-stream 1 ones))
 
 (define integers (cons-stream 1 (add-streams ones integers)))
@@ -82,6 +138,55 @@
    integers 
    (lambda (a b)
      (+ a b))))
+
+(define rama 
+  (pairs-weighted
+   integers
+   integers
+   (lambda (a b)
+     (+ (* a a a) (* b b b)))))
+
+(define (merge-weighted-b s1 s2 weight)
+  (cond ((stream-null? s1) s2)
+        ((stream-null? s2) s1)
+        (else
+         (let ((s1car (stream-car s1))
+               (s2car (stream-car s2)))
+           (if (<= (weight s1car) (weight s2car))
+               (cons-stream s1car 
+                            (merge-weighted-b (stream-cdr s1) 
+                                            s2 
+                                            weight))
+               (cons-stream s2car 
+                            (merge-weighted-b s1 
+                                            (stream-cdr s2) 
+                                            weight)))))))
+ 
+(define (weighted-pairs-b s t weight) 
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (merge-weighted-b
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (weighted-pairs-b (stream-cdr s) (stream-cdr t) weight)
+    weight)))
+
+(define (ramujan-numbers)
+  (define (sum-cubed x)
+    (let ((i (car x)) (j (cadr x)))
+      (+ (* i i i) (* j j j))))
+  (define (ramujans all-sum-cubes)
+    (let* ((current (stream-car all-sum-cubes))
+           (next (stream-car (stream-cdr all-sum-cubes)))
+           (ramujan-candidate (sum-cubed current)))
+      (cond ((= ramujan-candidate
+                (sum-cubed next))
+             (cons-stream (list ramujan-candidate current next)
+                          (ramujans (stream-cdr (stream-cdr all-sum-cubes)))))
+            (else (ramujans (stream-cdr all-sum-cubes))))))
+  (ramujans (weighted-pairs-b integers 
+                            integers 
+                            sum-cubed)))
 
 (define (b-filter-func pair)
   (let* ((a (car pair))
@@ -105,3 +210,4 @@
     integers
     integers
     b-weighting-func)))
+
