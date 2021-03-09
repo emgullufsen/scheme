@@ -22,6 +22,10 @@
           env))
         ((cond? exp) 
          (eval (cond->if exp) env))
+        ((and? exp)
+          (eval (and->if exp) env))
+        ((or? exp)
+          (eval (or->if exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values 
@@ -57,21 +61,6 @@
             (list-of-values 
              (rest-operands exps) 
              env))))
-
-;; EXERCISE 4.1
-(define (list-of-values-left-to-right exps env)
-    (if (no-operands? exps)
-        '()
-        (let* ((lov-firs (eval (first-operand exps env)))
-               (lov-rest (list-of-values-left-to-right (rest-operands exps) env)))
-            (cons lov-firs lov-rest))))
-
-(define (list-of-values-right-to-left exps env)
-    (if (no-operands? exps)
-        '()
-        (let* ((lov-rest (list-of-values-right-to-left (rest-operands exps) env))
-               (lov-firs (eval (first-operand exps env))))
-            (cons lov-firs lov-rest))))
 
 (define (eval-if exp env)
   (if (true? (eval (if-predicate exp) env))
@@ -186,13 +175,31 @@
 (define (first-operand ops) (car ops))
 (define (rest-operands ops) (cdr ops))
 
-;; EXERCISE 4.2
-;; a) Lois' plan is wrong in that eval with dispatch on type thinking (define x 3)
-;;    is a procedure application (application? will return true for that expression)
-;; b) If we swap in the below syntax-selector (prefixed with 'l-') procedure for application? 
-;;    (and other selectors for parts of exp, also w/ 'l-' prefix) inside of eval, we will have helped 
-;;    Lois out and procedure syntax in evaluated lang will be
-;;    (call + 2 3)
-(define (l-application? exp) (tagged-list? exp 'call))
-(define (l-operator exp) (cadr exp))
-(define (l-operands exp) (cddr exp)) 
+(define (cond? exp) 
+  (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) 
+  (car clause))
+(define (cond-actions clause) 
+  (cdr clause))
+(define (cond->if exp)
+  (expand-clauses (cond-clauses exp)))
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false     ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp 
+                 (cond-actions first))
+                (error "ELSE clause isn't 
+                        last: COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp 
+                      (cond-actions first))
+                     (expand-clauses 
+                      rest))))))
