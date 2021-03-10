@@ -175,6 +175,13 @@
 (define (first-operand ops) (car ops))
 (define (rest-operands ops) (cdr ops))
 
+(define (cond-arrow-clause? c)
+  (if (null? (cddr c))
+    'false
+    (if (= (cadr c) '=>)
+      'true
+      'false)))
+
 (define (cond? exp) 
   (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
@@ -198,8 +205,14 @@
                 (error "ELSE clause isn't 
                         last: COND->IF"
                        clauses))
-            (make-if (cond-predicate first)
+            (if (cond-arrow-clause? first)
+              (make-if (cond-predicate first)
+                     ((cddr first)             ;; applying the 'recipient' function
+                       (cond-predicate first)) ;; with the result of predicate as arg
+                     (expand-clauses 
+                      rest))
+              (make-if (cond-predicate first)
                      (sequence->exp 
                       (cond-actions first))
                      (expand-clauses 
-                      rest))))))
+                      rest)))))))
