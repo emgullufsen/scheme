@@ -26,6 +26,8 @@
           (eval (and->if exp) env))
         ((or? exp)
           (eval (or->if exp) env))
+        ((let? exp)
+          (eval (expand-let-to-lambda-exp exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values 
@@ -177,10 +179,10 @@
 
 (define (cond-arrow-clause? c)
   (if (null? (cddr c))
-    'false
-    (if (= (cadr c) '=>)
-      'true
-      'false)))
+    #f
+    (if (eq? (cadr c) '=>)
+      #t
+      #f)))
 
 (define (cond? exp) 
   (tagged-list? exp 'cond))
@@ -207,7 +209,7 @@
                        clauses))
             (if (cond-arrow-clause? first)
               (make-if (cond-predicate first)
-                     ((cddr first)             ;; applying the 'recipient' function
+                     (list (car (cddr first))             ;; applying the 'recipient' function
                        (cond-predicate first)) ;; with the result of predicate as arg
                      (expand-clauses 
                       rest))
@@ -215,4 +217,42 @@
                      (sequence->exp 
                       (cond-actions first))
                      (expand-clauses 
+                      rest)))))))
+
+(define (expand-clauses-old clauses)
+  (if (null? clauses)
+      'false     ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp 
+                 (cond-actions first))
+                (error "ELSE clause isn't 
+                        last: COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp 
+                      (cond-actions first))
+                     (expand-clauses-old 
+                      rest))))))
+
+(define (expand-clauses-new clauses)
+  (if (null? clauses)
+      'false     ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp 
+                 (cond-actions first))
+                (error "ELSE clause isn't 
+                        last: COND->IF"
+                       clauses))
+            (if (cond-arrow-clause? first)
+              'arrow-clause
+              (make-if (cond-predicate first)
+                     (sequence->exp 
+                      (cond-actions first))
+                     (expand-clauses-new 
                       rest)))))))

@@ -121,3 +121,23 @@
     (if (null? clauses)
         'false
         (make-if (car clauses) (car clauses) (expand-or-exp (cdr clauses)))))
+
+;; EXERCISE 4.6
+
+(define (get-vars bs)
+    (if (null? bs)
+        '()
+        (cons (caar bs) (get-vars (cdr bs)))))
+
+(define (get-exps bs)
+    (if (null? bs)
+        '()
+        (cons (car (cdr (car bs))) (get-exps (cdr bs)))))
+
+(define (let? exp) (tagged-list? exp 'let))
+(define (expand-let-to-lambda-exp exp) (expand-to-lambda (cdr exp)))
+(define (expand-let-to-lambda bindsNbod)
+    (list (make-lambda 
+            (get-vars (car bindsNbod))
+            (cadr bindsNbod))
+          (get-exps (car bindsNbod))))
