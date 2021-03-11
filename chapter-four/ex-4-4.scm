@@ -141,3 +141,5 @@
             (get-vars (car bindsNbod))
             (cadr bindsNbod))
           (get-exps (car bindsNbod))))
+
+(define letexp '(let ((a 1) (b 2)) (+ a b)))
