@@ -1,3 +1,11 @@
+;; code from the book, with some additions 
+
+(define (true? x)
+  (not (eq? x false)))
+
+(define (false? x)
+  (eq? x false))
+
 (define (eval exp env)
   (cond ((self-evaluating? exp) 
          exp)
@@ -28,6 +36,8 @@
           (eval (or->if exp) env))
         ((let? exp)
           (eval (expand-let-to-lambda-exp exp) env))
+        ((let*? exp)
+          (eval (let*->nested-lets exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values 
@@ -237,22 +247,10 @@
                      (expand-clauses-old 
                       rest))))))
 
-(define (expand-clauses-new clauses)
-  (if (null? clauses)
-      'false     ; no else clause
-      (let ((first (car clauses))
-            (rest (cdr clauses)))
-        (if (cond-else-clause? first)
-            (if (null? rest)
-                (sequence->exp 
-                 (cond-actions first))
-                (error "ELSE clause isn't 
-                        last: COND->IF"
-                       clauses))
-            (if (cond-arrow-clause? first)
-              'arrow-clause
-              (make-if (cond-predicate first)
-                     (sequence->exp 
-                      (cond-actions first))
-                     (expand-clauses-new 
-                      rest)))))))
+(define (make-procedure parameters body env)
+  (list 'procedure parameters body env))
+(define (compound-procedure? p)
+  (tagged-list? p 'procedure))
+(define (procedure-parameters p) (cadr p))
+(define (procedure-body p) (caddr p))
+(define (procedure-environment p) (cadddr p))

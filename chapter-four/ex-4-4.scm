@@ -143,3 +143,22 @@
           (get-exps (car bindsNbod))))
 
 (define letexp '(let ((a 1) (b 2)) (+ a b)))
+
+; (let* ((x 3)
+;        (y (+ x 2))
+;        (z (+ x y 5)))
+;   (* x z))
+
+; (let ((x 3))
+;     (let ((y (+ x 2)))
+;         (let ((z (+ x y 5)))
+;             (* x z))))
+
+(define (make-let binds bod) (list 'let binds bod))
+(define (let*? exp) (tagged-list? exp 'let*))
+(define (let*->nested-lets exp)
+    (define (unroll-lets binds fbod)
+        (if (null? binds)
+            (sequence->exp fbod)
+            (make-let (list (car binds)) (unroll-lets (cdr binds) fbod))))
+    (unroll-lets (cadr exp) (car (cddr exp))))
