@@ -135,15 +135,19 @@
         (cons (car (cdr (car bs))) (get-exps (cdr bs)))))
 
 (define (let? exp) (tagged-list? exp 'let))
-(define (expand-let-to-lambda-exp exp) (expand-to-lambda (cdr exp)))
+
 (define (expand-let-to-lambda bindsNbod)
     (list (make-lambda 
             (get-vars (car bindsNbod))
             (cadr bindsNbod))
           (get-exps (car bindsNbod))))
 
-(define letexp '(let ((a 1) (b 2)) (+ a b)))
+(define (expand-let-to-lambda-exp exp) (expand-let-to-lambda (cdr exp)))
 
+(define letexp '(let ((a 1) (b 2)) (+ a b)))
+(define condexp '(cond ((assoc b ((a 1) (b 2))) => cadr) (else false)))
+(define namedlet '(let fib-iter ((a 0) (b 1)) (display "yay")))
+(define namedlet2 '(let fib-iter ((a 1) (b 0) (count n)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
 ; (let* ((x 3)
 ;        (y (+ x 2))
 ;        (z (+ x y 5)))
@@ -162,3 +166,22 @@
             (sequence->exp fbod)
             (make-let (list (car binds)) (unroll-lets (cdr binds) fbod))))
     (unroll-lets (cadr exp) (car (cddr exp))))
+
+(define (let->combination exp)
+    (if (named-let? exp)
+        (let->combination (named-let->let exp))
+        (expand-let-to-lambda-exp exp)))
+
+(define (named-let? exp)
+    (if (tagged-list? exp 'let)
+        (if (null? (cdddr exp))
+            #f
+            #t)
+        #f))
+
+;;     '(let fib-iter ((a 0) (b 1)) (display "yay"))
+(define (named-let->let nm)
+    (make-let
+        (cons (list (cadr nm) (make-lambda (get-vars (caddr nm)) (cadddr nm)))
+              (caddr nm))
+        (cadddr nm)))
