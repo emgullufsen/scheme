@@ -35,7 +35,7 @@
         ((or? exp)
           (eval (or->if exp) env))
         ((let? exp)
-          (eval (expand-let-to-lambda-exp exp) env))
+          (eval (let->combination exp) env))
         ((let*? exp)
           (eval (let*->nested-lets exp) env))
         ((application? exp)

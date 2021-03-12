@@ -137,7 +137,7 @@
 (define (let? exp) (tagged-list? exp 'let))
 
 (define (expand-let-to-lambda bindsNbod)
-    (list (make-lambda 
+    (cons (make-lambda 
             (get-vars (car bindsNbod))
             (cadr bindsNbod))
           (get-exps (car bindsNbod))))
