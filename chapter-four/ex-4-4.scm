@@ -139,7 +139,7 @@
 (define (expand-let-to-lambda bindsNbod)
     (cons (make-lambda 
             (get-vars (car bindsNbod))
-            (cadr bindsNbod))
+            (cdr bindsNbod))
           (get-exps (car bindsNbod))))
 
 (define (expand-let-to-lambda-exp exp) (expand-let-to-lambda (cdr exp)))
