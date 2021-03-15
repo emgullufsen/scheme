@@ -339,7 +339,9 @@
         (list 'null? null?)
         (list '* *)
         (list '+ +)
-        (list 'square (lambda (x) (* x x)))))
+        (list 'square (lambda (x) (* x x)))
+        (list 'cadr cadr)
+        (list 'assoc assoc)))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))

@@ -145,7 +145,7 @@
 (define (expand-let-to-lambda-exp exp) (expand-let-to-lambda (cdr exp)))
 
 (define letexp '(let ((a 1) (b 2)) (+ a b)))
-(define condexp '(cond ((assoc b ((a 1) (b 2))) => cadr) (else false)))
+(define condexp '(cond ((assoc 'b '((a 1) (b 2))) => cadr) (else false)))
 (define namedlet '(let fib-iter ((a 0) (b 1)) (display "yay")))
 (define namedlet2 '(let fib-iter ((a 1) (b 0) (count n)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
 ; (let* ((x 3)
