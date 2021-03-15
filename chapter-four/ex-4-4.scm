@@ -185,3 +185,34 @@
         (cons (list (cadr nm) (make-lambda (get-vars (caddr nm)) (cadddr nm)))
               (caddr nm))
         (cadddr nm)))
+
+(define (get-defines pb d)
+    (if (null? pb)
+        d
+        (if (definition? (car pb))
+            (get-defines (cdr pb) (cons (car pb) d))
+            (get-defines (cdr pb) d))))
+
+(define (get-non-defines pb d)
+    (if (null? pb)
+        d
+        (if (definition? (car pb))
+            (get-defines (cdr pb) d)
+            (get-defines (cdr pb) (cons (car pb) d)))))
+
+(define (defs->binds defs)
+    (map (lambda (d) (list (cadr d) '*unassigned*)) defs))
+
+(define (make-assignment var val) (list 'set! var val))
+
+(define (add-sets defs procbod) (append (map (lambda (d) (make-assignment (cadr d) (caddr d))) defs) (get-non-defines procbod '())))
+
+(define (scan-out-defines procbod)
+    (let ((defs (get-defines procbod '())))
+        (if (null? defs)
+            procbod
+            (make-let
+                (defs->binds defs)
+                (add-sets defs procbod)))))
+
+(define defines '(lambda (x) (define u (e1)) (define v (e2)) (e3)))
