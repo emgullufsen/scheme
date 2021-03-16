@@ -249,7 +249,7 @@
                       rest))))))
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters body env))
+  (list 'procedure parameters (scan-out-defines body) env))
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
 (define (procedure-parameters p) (cadr p))
@@ -286,30 +286,13 @@
              (env-loop 
               (enclosing-environment env)))
             ((eq? var (car vars))
-             (car vals))
-            (else (scan (cdr vars) 
-                        (cdr vals)))))
-    (if (eq? env the-empty-environment)
-        (error "Unbound variable" var)
-        (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
-  (env-loop env))
-
-(define (lookup-variable-value-new var env)
-  (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
-             (env-loop 
-              (enclosing-environment env)))
-            ((eq? var (car vars))
              (if (eq? '*unassigned* (car vals))
               (error "var value is UNASSIGNED")
               (car vals)))
             (else (scan (cdr vars) 
                         (cdr vals)))))
     (if (eq? env the-empty-environment)
-        (error "Unbound variable" var)
+        (error "Unbound variable SUP" var)
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
@@ -360,7 +343,8 @@
         (list '+ +)
         (list 'square (lambda (x) (* x x)))
         (list 'cadr cadr)
-        (list 'assoc assoc)))
+        (list 'assoc assoc)
+        (list '= =)))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
@@ -387,3 +371,4 @@
 (define the-global-environment 
   (setup-environment))
 
+(define defines0applied '((lambda (x) (define (addoneeqtwo? y) (= 2 (eaddone y))) (define (eaddone z) (+ z 1)) (addoneeqtwo? x)) 1))

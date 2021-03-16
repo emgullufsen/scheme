@@ -176,8 +176,8 @@
     (if (tagged-list? exp 'let)
         (if (null? (cdddr exp))
             #f
-            #t)
-        #f))
+            (if (symbol? (cadr exp)) #t #f)))
+        #f)
 
 ;;     '(let fib-iter ((a 0) (b 1)) (display "yay"))
 (define (named-let->let nm)
@@ -197,22 +197,25 @@
     (if (null? pb)
         d
         (if (definition? (car pb))
-            (get-defines (cdr pb) d)
-            (get-defines (cdr pb) (cons (car pb) d)))))
+            (get-non-defines (cdr pb) d)
+            (get-non-defines (cdr pb) (cons (car pb) d)))))
 
 (define (defs->binds defs)
-    (map (lambda (d) (list (cadr d) '*unassigned*)) defs))
+    (map (lambda (d) (list (definition-variable d) '(quote *unassigned*))) defs))
 
 (define (make-assignment var val) (list 'set! var val))
 
-(define (add-sets defs procbod) (append (map (lambda (d) (make-assignment (cadr d) (caddr d))) defs) (get-non-defines procbod '())))
+(define (add-sets defs procbod) (append (map (lambda (d) (make-assignment (definition-variable d) (definition-value d))) defs) (get-non-defines procbod '())))
 
 (define (scan-out-defines procbod)
     (let ((defs (get-defines procbod '())))
         (if (null? defs)
             procbod
-            (make-let
-                (defs->binds defs)
-                (add-sets defs procbod)))))
+            (list (append (list 'let
+                    (defs->binds defs))
+                    (add-sets defs procbod))))))
 
+(define defines0 '(lambda (x) (define (addoneeqtwo? (= 2 (eaddone x)))) (define (eaddone z) (+ z 1)) (addoneeqtwo? x)))
+(define defines0applied '((lambda (x) (define (addoneeqtwo? y) (= 2 (eaddone y))) (define (eaddone z) (+ z 1)) (addoneeqtwo? x)) 1))
 (define defines '(lambda (x) (define u (e1)) (define v (e2)) (e3)))
+(define t (make-procedure (lambda-parameters (car defines0applied)) (lambda-body (car defines0applied)) the-global-environment))
