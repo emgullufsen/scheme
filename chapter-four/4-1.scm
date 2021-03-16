@@ -341,6 +341,7 @@
         (list 'null? null?)
         (list '* *)
         (list '+ +)
+        (list '- -)
         (list 'square (lambda (x) (* x x)))
         (list 'cadr cadr)
         (list 'assoc assoc)

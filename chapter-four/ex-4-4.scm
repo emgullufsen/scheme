@@ -144,10 +144,6 @@
 
 (define (expand-let-to-lambda-exp exp) (expand-let-to-lambda (cdr exp)))
 
-(define letexp '(let ((a 1) (b 2)) (+ a b)))
-(define condexp '(cond ((assoc 'b '((a 1) (b 2))) => cadr) (else false)))
-(define namedlet '(let fib-iter ((a 0) (b 1)) (display "yay")))
-(define namedlet2 '(let fib-iter ((a 1) (b 0) (count n)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
 ; (let* ((x 3)
 ;        (y (+ x 2))
 ;        (z (+ x y 5)))
@@ -176,8 +172,8 @@
     (if (tagged-list? exp 'let)
         (if (null? (cdddr exp))
             #f
-            (if (symbol? (cadr exp)) #t #f)))
-        #f)
+            (if (symbol? (cadr exp)) #t #f))
+        #f))
 
 ;;     '(let fib-iter ((a 0) (b 1)) (display "yay"))
 (define (named-let->let nm)
@@ -219,3 +215,17 @@
 (define defines0applied '((lambda (x) (define (addoneeqtwo? y) (= 2 (eaddone y))) (define (eaddone z) (+ z 1)) (addoneeqtwo? x)) 1))
 (define defines '(lambda (x) (define u (e1)) (define v (e2)) (e3)))
 (define t (make-procedure (lambda-parameters (car defines0applied)) (lambda-body (car defines0applied)) the-global-environment))
+
+(define letexp '(let ((a 1) (b 2)) (+ a b)))
+(define le (eval (operator (let->combination letexp)) the-global-environment))
+
+(define lee (eval (first-exp (procedure-body le)) 
+                (extend-environment
+                    (procedure-parameters 
+                        le)
+                    (list 4 5)
+                    (procedure-environment le))))
+
+(define condexp '(cond ((assoc 'b '((a 1) (b 2))) => cadr) (else false)))
+(define namedlet '(let fib-iter ((a 0) (b 1)) (display "yay")))
+(define namedlet2 '(let fib-iter ((a 1) (b 0) (count n)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
