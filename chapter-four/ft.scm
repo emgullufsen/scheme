@@ -134,6 +134,55 @@
                      (expand-clauses 
                       rest)))))))
 
+(define (get-vars bs)
+    (if (null? bs)
+        '()
+        (cons (caar bs) (get-vars (cdr bs)))))
+
+(define (get-exps bs)
+    (if (null? bs)
+        '()
+        (cons (car (cdr (car bs))) (get-exps (cdr bs)))))
+
+(define (let? exp) (tagged-list? exp 'let))
+
+(define (expand-let-to-lambda bindsNbod)
+    (cons (make-lambda 
+            (get-vars (car bindsNbod))
+            (cdr bindsNbod))
+          (get-exps (car bindsNbod))))
+
+(define (expand-let-to-lambda-exp exp) (expand-let-to-lambda (cdr exp)))
+
+(define (get-defines pb d)
+    (if (null? pb)
+        d
+        (if (definition? (car pb))
+            (get-defines (cdr pb) (cons (car pb) d))
+            (get-defines (cdr pb) d))))
+
+(define (get-non-defines pb d)
+    (if (null? pb)
+        d
+        (if (definition? (car pb))
+            (get-non-defines (cdr pb) d)
+            (get-non-defines (cdr pb) (cons (car pb) d)))))
+
+(define (defs->binds defs)
+    (map (lambda (d) (list (definition-variable d) '(quote *unassigned*))) defs))
+
+(define (make-assignment var val) (list 'set! var val))
+
+(define (add-sets defs procbod) (append (map (lambda (d) (make-assignment (definition-variable d) (definition-value d))) defs) (get-non-defines procbod '())))
+
+(define (scan-out-defines procbod)
+    (let ((defs (get-defines procbod '())))
+        (if (null? defs)
+            procbod
+            (list (append (list 'let
+                    (defs->binds defs))
+                    (add-sets defs procbod))))))
+
 (define (eval exp env) ((analyze exp) env))
 
 (define (analyze exp)
@@ -149,6 +198,8 @@
          (analyze-definition exp))
         ((if? exp) 
          (analyze-if exp))
+        ((let? exp) 
+         (analyze (expand-let-to-lambda-exp exp)))
         ((lambda? exp) 
          (analyze-lambda exp))
         ((begin? exp) 
@@ -244,7 +295,7 @@
                      proc))))
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters (scan-out-defines body) env))
+  (list 'procedure parameters body env))
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
 (define (procedure-parameters p) (cadr p))
@@ -365,3 +416,7 @@
 
 (define the-global-environment 
   (setup-environment))
+
+(define letexp '(let ((a 1) (b 2)) (+ a b)))
+(define lx '(lambda (a b) (+ a b)))
+(define lxx '((lambda (a b) (+ a b)) 1 2))
