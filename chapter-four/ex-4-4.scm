@@ -159,13 +159,38 @@
 (define (let*->nested-lets exp)
     (define (unroll-lets binds fbod)
         (if (null? binds)
-            (sequence->exp fbod)
+            fbod
             (make-let (list (car binds)) (unroll-lets (cdr binds) fbod))))
     (unroll-lets (cadr exp) (car (cddr exp))))
 
+; Let selectors
+(define (let-initials exp) (map cadr (cadr exp)))
+(define (let-parameters exp) (map car (cadr exp)))
+(define named-let-identifier car)
+(define let-body cddr)
+ 
+; A named let is equivalent to a procedure definition 
+; followed by a single application of that procedure with the 
+; initial values given by the let expression.
+;
+; exp should be the initial let expression stripped of the 'let symbol
+;   this allows the same selection procedures to be used without altering them.
+(define (named-let->combination exp)
+  (let ((procedure-name (named-let-identifier exp)))
+    ; 2 expressions are needed so wrap them in a begin form
+    (make-begin 
+     (list
+      ; define the procedure with the name given in the let expression
+      (list 'define procedure-name 
+            (make-lambda 
+             (let-parameters exp) 
+             (let-body exp)))
+      ; apply the procedure with the initial values given by the let expression
+      (cons procedure-name (let-initials exp))))))
+
 (define (let->combination exp)
     (if (named-let? exp)
-        (let->combination (named-let->let exp))
+        (named-let->combination (cdr exp))
         (expand-let-to-lambda-exp exp)))
 
 (define (named-let? exp)
@@ -178,7 +203,7 @@
 ;;     '(let fib-iter ((a 0) (b 1)) (display "yay"))
 (define (named-let->let nm)
     (make-let
-        (cons (list (cadr nm) (make-lambda (get-vars (caddr nm)) (cadddr nm)))
+        (cons (list (cadr nm) (make-lambda (get-vars (caddr nm)) (cdddr nm)))
               (caddr nm))
         (cadddr nm)))
 
@@ -226,6 +251,10 @@
                     (list 4 5)
                     (procedure-environment le))))
 
+(define hashlet '(let* ((z 3) (y (+ z 7))) (display y)))
+
 (define condexp '(cond ((assoc 'b '((a 1) (b 2))) => cadr) (else false)))
 (define namedlet '(let fib-iter ((a 0) (b 1)) (display "yay")))
-(define namedlet2 '(let fib-iter ((a 1) (b 0) (count n)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
+(define namedlet2 '((lambda (x) (let fib-iter ((a 1) (b 0) (count x)) (if (= count 0) b (fib-iter (+ a b) a (- count 1))))) 5))
+(define nm3 '(let fib-iter ((a 1) (b 0) (count 5)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))
+(define nm4 (let fib-iter ((a 1) (b 0) (count 20)) (if (= count 0) b (fib-iter (+ a b) a (- count 1)))))

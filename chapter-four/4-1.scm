@@ -345,6 +345,7 @@
         (list 'square (lambda (x) (* x x)))
         (list 'cadr cadr)
         (list 'assoc assoc)
+        (list 'display display)
         (list '= =)))
 
 (define (primitive-procedure-names)
