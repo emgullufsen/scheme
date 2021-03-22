@@ -420,3 +420,27 @@
 (define letexp '(let ((a 1) (b 2)) (+ a b)))
 (define lx '(lambda (a b) (+ a b)))
 (define lxx '((lambda (a b) (+ a b)) 1 2))
+
+(define (time-it-ticks)
+  (with-timings
+    (lambda ()
+      (eval lxx the-global-environment))
+    (lambda (run-time gc-time real-time)
+      (write run-time)
+      (write-char #\space)
+      (write gc-time)
+      (write-char #\space)
+      (write real-time)
+      (newline))))
+
+(define (time-it-seconds)
+  (with-timings
+    (lambda ()
+      (eval lxx the-global-environment))
+    (lambda (run-time gc-time real-time)
+      (write (internal-time/ticks->seconds run-time))
+      (write-char #\space)
+      (write (internal-time/ticks->seconds gc-time))
+      (write-char #\space)
+      (write (internal-time/ticks->seconds real-time))
+      (newline))))
