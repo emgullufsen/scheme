@@ -214,10 +214,10 @@
           (begin-actions exp)))
         ((cond? exp) 
          (analyze (cond->if exp)))
-        ((application? exp) 
-         (analyze-application exp))
         ((amb? exp)
          (analyze-amb exp))
+        ((application? exp) 
+         (analyze-application exp))
         (else
          (error "Unknown expression 
                  type: ANALYZE" 
@@ -450,12 +450,24 @@
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'null? null?)
-        (list '* *)
+        (list 'list list)
+        (list 'memq memq)
+        (list 'member member)
+        (list 'not not)
         (list '+ +)
-        (list 'square (lambda (x) (* x x)))
-        (list 'cadr cadr)
-        (list 'assoc assoc)
-        (list '= =)))
+        (list '- -)
+        (list '* *)
+        (list '= =)
+        (list '> >)
+        (list '>= >=)
+        (list '<= <=)
+        (list 'abs abs)
+        (list 'remainder remainder)
+        (list 'integer? integer?)
+        (list 'sqrt sqrt)
+        (list 'eq? eq?)
+;;      more primitives
+        ))
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
@@ -500,6 +512,11 @@
 		     '<procedure-env>))
       (display object)))
 
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
 
 (define (driver-loop)
   (define (internal-loop try-again)
