@@ -445,6 +445,8 @@
 (define (primitive-implementation proc) 
   (cadr proc))
 
+(define exorproc (lambda (a b) (if a (if b false true) (if b true false))))
+
 (define primitive-procedures
   (list (list 'car car)
         (list 'cdr cdr)
@@ -465,6 +467,7 @@
         (list 'remainder remainder)
         (list 'integer? integer?)
         (list 'sqrt sqrt)
+        (list 'exor exorproc)
         (list 'eq? eq?)
 ;;      more primitives
         ))
